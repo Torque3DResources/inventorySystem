@@ -4,7 +4,7 @@
     ModuleId="inventorySystem"
     VersionId="1"
     Group="Game"
-    scriptFile="inventorySystem.cs"
+    scriptFile="inventorySystem.tscript"
     CreateFunction="onCreate"
     DestroyFunction="onDestroy">
     <DeclaredAssets
