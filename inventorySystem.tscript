@@ -13,7 +13,6 @@ function inventorySystem::initServer(%this)
    %this.queueExec("./scripts/server/inventory.tscript");
    %this.queueExec("./scripts/server/item.tscript");
    %this.queueExec("./scripts/server/pickupItem.tscript");
-   %this.queueExec("./scripts/server/player.tscript");
 }
 
 //This is called when the server is created for an actual game/map to be played
