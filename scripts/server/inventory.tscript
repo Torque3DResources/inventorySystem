@@ -52,10 +52,23 @@ function serverCmdUse(%client, %itemData)
    %client.getControlObject().use(%itemData);
 }
 
+function serverCmdUseItemSlot(%client, %slotNum)
+{  
+   %client.getControlObject().use(%client.getControlObject().getItemSlot(%slotNum));
+}
+
 //-----------------------------------------------------------------------------
 // ShapeBase inventory support
 //-----------------------------------------------------------------------------
+function ShapeBase::getItemSlot(%this,%slot)
+{
+    return %this.itemSlot[%slot];
+}
 
+function ShapeBase::setItemSlot(%this,%itemData,%slot)
+{
+    %this.itemSlot[%slot] = %itemData;
+}
 //-----------------------------------------------------------------------------
 
 function ShapeBase::use(%this, %itemData)
