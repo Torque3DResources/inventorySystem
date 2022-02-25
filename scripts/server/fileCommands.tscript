@@ -1,0 +1,50 @@
+function inventorySystem::insertSaveData(%this)
+{
+    $saveRecord.add("<inventorySystem>","");
+    
+   for (%clientIndex = 0; %clientIndex < ClientGroup.getCount(); %clientIndex++)
+   {
+      %client = ClientGroup.getObject(%clientIndex);  
+      for(%i=0; %i < %client.player.inventoryArray.count(); %i++)
+      {
+           %inventoryItemName = %client.player.inventoryArray.getKey(%i);
+           %inventoryAmount = %client.player.inventoryArray.getValue(%i);
+           
+           if(%inventoryAmount <= 0)
+               continue;
+           
+           %inventoryListInfo = %inventoryItemName TAB %inventoryAmount;
+           
+           $saveRecord.add(%client.nameBase, %inventoryListInfo);
+      } 
+   }
+}
+
+function inventorySystem::parseSaveData(%this)
+{
+    %count = $saveRecord.count();
+    %curModule = "";
+    for (%i=0;%i<%count;%i++)
+    {
+        %temp = $saveRecord.getKey(%i);
+        if (strchrpos(getword(%temp,0),"<")>-1)
+        {
+            %curModule = stripChars(%temp,"< >");
+            %i++;//skip module divide entries
+        }
+        if (%curModule $= "inventorySystem")
+        {
+            for (%clientIndex = 0; %clientIndex < ClientGroup.getCount(); %clientIndex++)
+            {
+                %client = ClientGroup.getObject(%clientIndex);
+                if (%client.nameBase $= $saveRecord.getKey(%i))
+                {
+                   %inventoryItemName = getWord($saveRecord.getValue(%i), 0);
+                   %inventoryAmount = getWord($saveRecord.getValue(%i), 1);
+                   
+                   %client.player.setInventory(%inventoryItemName, %inventoryAmount);
+                }
+            }            
+        }
+    }
+}

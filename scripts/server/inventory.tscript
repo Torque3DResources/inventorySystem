@@ -47,18 +47,31 @@
 // Inventory server commands
 //-----------------------------------------------------------------------------
 
-function serverCmdUse(%client, %data)
+function serverCmdUse(%client, %itemData)
 {
-   %client.getControlObject().use(%data);
+   %client.getControlObject().use(%itemData);
+}
+
+function serverCmdUseItemSlot(%client, %slotNum)
+{  
+   %client.getControlObject().use(%client.getControlObject().getItemSlot(%slotNum));
 }
 
 //-----------------------------------------------------------------------------
 // ShapeBase inventory support
 //-----------------------------------------------------------------------------
+function ShapeBase::getItemSlot(%this,%slot)
+{
+    return %this.itemSlot[%slot];
+}
 
+function ShapeBase::setItemSlot(%this,%itemData,%slot)
+{
+    %this.itemSlot[%slot] = %itemData;
+}
 //-----------------------------------------------------------------------------
 
-function ShapeBase::use(%this, %data)
+function ShapeBase::use(%this, %itemData)
 {
    // Use an object in the inventory.
 
@@ -73,23 +86,23 @@ function ShapeBase::use(%this, %data)
          return false;
    }
 
-   if (%this.getInventory(%data) > 0)
-      return %data.onUse(%this);
+   if (%this.getInventory(%itemData) > 0)
+      return %itemData.onUse(%this);
 
    return false;
 }
 
-function ShapeBase::throw(%this, %data, %amount)
+function ShapeBase::throw(%this, %itemData, %amount)
 {
    // Throw objects from inventory. The onThrow method is
    // responsible for decrementing the inventory.
 
-   if (%this.getInventory(%data) > 0)
+   if (%this.getInventory(%itemData) > 0)
    {
-      %obj = %data.onThrow(%this, %amount);
-      if (%obj)
+      %itemInst = %itemData.onThrow(%this, %amount);
+      if (%itemInst)
       {
-         %this.throwObject(%obj);
+         %this.throwObject(%itemInst);
          serverPlay3D(ThrowSnd, %this.getTransform());
          return true;
       }
@@ -97,31 +110,31 @@ function ShapeBase::throw(%this, %data, %amount)
    return false;
 }
 
-function ShapeBase::pickup(%this, %obj, %amount)
+function ShapeBase::pickup(%this, %itemInst, %amount)
 {
    // This method is called to pickup an object and add it to the inventory.
    // The datablock onPickup method is actually responsible for doing all the
    // work, including incrementing the inventory.
 
-   %data = %obj.getDatablock();
+   %itemData = %itemInst.getDatablock();
 
    // Try and pickup the max if no value was specified
    if (%amount $= "")
-      %amount = %this.maxInventory(%data) - %this.getInventory(%data);
+      %amount = %this.maxInventory(%itemData) - %this.getInventory(%itemData);
 
    // The datablock does the work...
    if (%amount < 0)
       %amount = 0;
    if (%amount)
-      return %data.onPickup(%obj, %this, %amount);
+      return %itemData.onPickup(%itemInst, %this, %amount);
    return false;
 }
 
 //-----------------------------------------------------------------------------
 
-function ShapeBase::hasInventory(%this, %data)
+function ShapeBase::hasInventory(%this, %itemData)
 {
-   return (%this.inv[%data] > 0);
+   return (%this.getInventory(%itemData) > 0);
 }
 
 function ShapeBase::hasAmmo(%this, %weapon)
@@ -132,43 +145,52 @@ function ShapeBase::hasAmmo(%this, %weapon)
       return(%this.getInventory(%weapon.image.ammo) > 0);
 }
 
-function ShapeBase::maxInventory(%this, %data)
+function ShapeBase::maxInventory(%this, %itemData)
 {
-   return %data.maxInventory;
-   
-   //Could alternatively have add a maxInventory var to the playerDatablock and look it up there
-   //if you wanted different inventory limits by class or type
+    //%this is the object-instance holding the item
+    // see if that instance datablock has a cap. 0 denotes no limit, -1 denotes can't use
+    if (%this.getDatablock().maxInv[%itemData.getName()] != -1)
+    {
+        return (%this.getDatablock().maxInv[%itemData.getName()]);
+    }
+    else if (%itemData.maxInventory != -1) // check the item datablock to see if *it* specifies a cap
+    {   
+        return %itemData.maxInventory;
+    }
+    return 0;
 }
 
-function ShapeBase::incInventory(%this, %data, %amount)
+function ShapeBase::incInventory(%this, %itemData, %amount)
 {
    // Increment the inventory by the given amount.  The return value
    // is the amount actually added, which may be less than the
    // requested amount due to inventory restrictions.
 
-   %max = %this.maxInventory(%data);
-   %total = %this.inv[%data.getName()];
-   if (%total < %max)
+   %max = %this.maxInventory(%itemData);
+   %total = %this.getInventory(%itemData);
+   %netAmmount = %total + %amount;
+   if (%total < %max || %max == 0)
    {
-      if (%total + %amount > %max)
-         %amount = %max - %total;
-      %this.setInventory(%data, %total + %amount);
-      return %amount;
+      if (%netAmmount > %max)
+         %netAmmount = %max;
+      %this.setInventory(%itemData, %netAmmount);
+      return %netAmmount;
    }
    return 0;
 }
 
-function ShapeBase::decInventory(%this, %data, %amount)
+function ShapeBase::decInventory(%this, %itemData, %amount)
 {
    // Decrement the inventory by the given amount. The return value
    // is the amount actually removed.
-
-   %total = %this.inv[%data.getName()];
-   if (%total > 0)
+   
+   %max = %this.maxInventory(%itemData);
+   %total = %this.getInventory(%itemData);
+   if (%total > 0 && %max != 0)
    {
       if (%total < %amount)
          %amount = %total;
-      %this.setInventory(%data, %total - %amount);
+      %this.setInventory(%itemData, %total - %amount);
       return %amount;
    }
    return 0;
@@ -176,14 +198,30 @@ function ShapeBase::decInventory(%this, %data, %amount)
 
 //-----------------------------------------------------------------------------
 
-function ShapeBase::getInventory(%this, %data)
+function ShapeBase::getInventory(%this, %itemData)
 {
+   if(!isObject(%this.inventoryArray))
+   {
+      %this.inventoryArray = new ArrayObject();
+   }
+   
    // Return the current inventory amount
-   return %this.inv[%data.getName()];
+   %invIdx = %this.inventoryArray.getIndexFromKey(%itemData.getName());
+   %amount = %this.inventoryArray.getValue(%invIdx);
+   
+   if(%amount < 0)
+      %amout = 0;
+      
+   return %amount;
 }
 
-function ShapeBase::setInventory(%this, %data, %value)
+function ShapeBase::setInventory(%this, %itemData, %value)
 {
+   if(!isObject(%this.inventoryArray))
+   {
+      %this.inventoryArray = new ArrayObject();
+   }
+   
    // Set the inventory amount for this datablock and invoke inventory
    // callbacks.  All changes to inventory go through this single method.
 
@@ -192,19 +230,27 @@ function ShapeBase::setInventory(%this, %data, %value)
       %value = 0;
    else
    {
-      %max = %this.maxInventory(%data);
+      %max = %this.maxInventory(%itemData);
       if (%value > %max)
          %value = %max;
    }
 
    // Set the value and invoke object callbacks
-   %name = %data.getName();
-   if (%this.inv[%name] != %value)
+   %currentAmount = %this.getInventory(%itemData);
+   if (%currentAmount != %value)
    {
-      %this.inv[%name] = %value;
-      %data.onInventory(%this, %value);
-      %this.getDataBlock().onInventory(%data, %value);
+      %name = %itemData.getName();
+      %invIdx = %this.inventoryArray.getIndexFromKey(%name);
+      
+      if(%invIdx == -1)
+         %this.inventoryArray.add(%name, %value);
+      else
+         %this.inventoryArray.setValue(%value, %invIdx);
+         
+      %itemData.onInventory(%this, %value);
+      %this.getDataBlock().onInventory(%itemData, %value);
    }
+   callonModules("onSetInventory", %this, %itemData, %currentAmount); //%this is the object-instance holding the item
    return %value;
 }
 
@@ -212,12 +258,17 @@ function ShapeBase::setInventory(%this, %data, %value)
 
 function ShapeBase::clearInventory(%this)
 {
-   // To be filled in...
+   if(!isObject(%this.inventoryArray))
+   {
+      %this.inventoryArray = new ArrayObject();
+   }
+   %this.inventoryArray.empty();
+   callonModules("onClearInventory", %this);
 }
 
 //-----------------------------------------------------------------------------
 
-function ShapeBase::throwObject(%this, %obj)
+function ShapeBase::throwObject(%this, %itemInst)
 {
    // Throw the given object in the direction the shape is looking.
    // The force value is hardcoded according to the current default
@@ -243,12 +294,12 @@ function ShapeBase::throwObject(%this, %obj)
 
    // Set the object's position and initial velocity
    %pos = getBoxCenter(%this.getWorldBox());
-   %obj.setTransform(%pos);
-   %obj.applyImpulse(%pos, %vec);
+   %itemInst.setTransform(%pos);
+   %itemInst.applyImpulse(%pos, %vec);
 
    // Since the object is thrown from the center of the shape,
    // the object needs to avoid colliding with it's thrower.
-   %obj.setCollisionTimeout(%this);
+   %itemInst.setCollisionTimeout(%this);
 }
 
 //-----------------------------------------------------------------------------

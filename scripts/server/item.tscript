@@ -34,10 +34,12 @@ function Item::schedulePop(%this)
 
 //-----------------------------------------------------------------------------
 // Callbacks to hook items into the inventory system
-/*function ItemData::onCollision(%this, %obj, %col)
+function ItemData::onCollision(%this, %obj, %col)
 {
-   echo("ItemData::onCollision - object touched a " @ %this.pickUpName );
-}*/
+    if ((%col.getState() $= "Dead")|| %col.getDatablock().hasInventory == false)
+        return;
+    %col.pickup(%obj);
+}
 
 function ItemData::onUse(%this, %obj)
 {
