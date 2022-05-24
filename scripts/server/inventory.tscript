@@ -151,6 +151,8 @@ function ShapeBase::maxInventory(%this, %itemData)
     // see if that instance datablock has a cap. 0 denotes no limit, -1 denotes can't use
     if (%this.getDatablock().maxInv[%itemData.getName()] != -1)
     {
+        if (%this.getDatablock().getFieldValue(maxInv @ %itemData.getName()) $= "")
+            return 0;
         return (%this.getDatablock().maxInv[%itemData.getName()]);
     }
     else if (%itemData.maxInventory != -1) // check the item datablock to see if *it* specifies a cap
@@ -171,7 +173,7 @@ function ShapeBase::incInventory(%this, %itemData, %amount)
    %netAmmount = %total + %amount;
    if (%total < %max || %max == 0)
    {
-      if (%netAmmount > %max)
+      if (%netAmmount > %max && %max != 0)
          %netAmmount = %max;
       %this.setInventory(%itemData, %netAmmount);
       return %netAmmount;
@@ -207,10 +209,13 @@ function ShapeBase::getInventory(%this, %itemData)
    
    // Return the current inventory amount
    %invIdx = %this.inventoryArray.getIndexFromKey(%itemData.getName());
-   %amount = %this.inventoryArray.getValue(%invIdx);
+   if (%invIdx == -1)
+      %amount = 0;
+   else
+      %amount = %this.inventoryArray.getValue(%invIdx);
    
-   if(%amount < 0)
-      %amout = 0;
+   if(%amount <= 0)
+      %amount = 0;
       
    return %amount;
 }
@@ -231,7 +236,7 @@ function ShapeBase::setInventory(%this, %itemData, %value)
    else
    {
       %max = %this.maxInventory(%itemData);
-      if (%value > %max)
+      if (%value > %max && %max != 0)
          %value = %max;
    }
 
@@ -250,7 +255,7 @@ function ShapeBase::setInventory(%this, %itemData, %value)
       %itemData.onInventory(%this, %value);
       %this.getDataBlock().onInventory(%itemData, %value);
    }
-   callonModules("onSetInventory", %this, %itemData, %currentAmount); //%this is the object-instance holding the item
+   callonModules("onSetInventory","Game", %this, %itemData, %value); //%this is the object-instance holding the item
    return %value;
 }
 
