@@ -103,7 +103,10 @@ function ShapeBase::throw(%this, %itemData, %amount)
       if (%itemInst)
       {
          %this.throwObject(%itemInst);
-         serverPlay3D(ThrowSnd, %this.getTransform());
+         if (%itemData.throwSound)
+            serverPlay3D(%itemData.throwSound, %this.getTransform());
+         else
+            serverPlay3D(ThrowSnd, %this.getTransform());
          return true;
       }
    }

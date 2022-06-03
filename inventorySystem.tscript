@@ -18,6 +18,7 @@ function inventorySystem::initServer(%this)
 //This is called when the server is created for an actual game/map to be played
 function inventorySystem::onCreateGameServer(%this)
 {
+   %this.registerDatablock("./datablocks/audioProfiles");
    %this.registerDatablock("./datablocks/keyItem.tscript");
    %this.registerDatablock("./datablocks/consumableItem.tscript");
    %this.registerDatablock("./datablocks/moneyItem.tscript");
