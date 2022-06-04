@@ -189,9 +189,8 @@ function ShapeBase::decInventory(%this, %itemData, %amount)
    // Decrement the inventory by the given amount. The return value
    // is the amount actually removed.
    
-   %max = %this.maxInventory(%itemData);
    %total = %this.getInventory(%itemData);
-   if (%total > 0 && %max != 0)
+   if (%total > 0)
    {
       if (%total < %amount)
          %amount = %total;
