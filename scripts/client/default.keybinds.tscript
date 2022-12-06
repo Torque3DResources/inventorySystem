@@ -20,8 +20,19 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-if ( isObject( inventoryKeybindMap ) )
-   inventoryKeybindMap.delete();
-new ActionMap(inventoryKeybindMap);
+if ( !isObject( playerKeyMap ) )
+{
+   new ActionMap(playerKeyMap)
+   {
+      humanReadableName = "Player";
+   };
+}
 
-inventoryKeybindMap.bind(keyboard, "backspace", throwItem);
+//------------------------------------------------------------------------------
+// Set up remappable entries
+//------------------------------------------------------------------------------
+addKeyRemap("Throw Item", "playerKeyMap", "keyboard", "throwItem", "Throws Currently Equpped Item");
+
+playerKeyMap.bind(keyboard, "backspace", throwItem);
+
+playerKeyMap.push();
