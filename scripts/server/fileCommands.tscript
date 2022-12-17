@@ -4,8 +4,10 @@ function inventorySystem::insertSaveData(%this)
     
    for (%clientIndex = 0; %clientIndex < ClientGroup.getCount(); %clientIndex++)
    {
-      %client = ClientGroup.getObject(%clientIndex);  
-      for(%i=0; %i < %client.player.inventoryArray.count(); %i++)
+      %client = ClientGroup.getObject(%clientIndex); 
+      %count = %client.player.inventoryArray.count();
+      if (%count<1) $saveRecord.add("","");
+      for(%i=0; %i < %count; %i++)
       {
            %inventoryItemName = %client.player.inventoryArray.getKey(%i);
            %inventoryAmount = %client.player.inventoryArray.getValue(%i);
@@ -15,7 +17,7 @@ function inventorySystem::insertSaveData(%this)
            
            %inventoryListInfo = %inventoryItemName TAB %inventoryAmount;
            
-           $saveRecord.add(%client.nameBase, %inventoryListInfo);
+           $saveRecord.add(%client.connectData, %inventoryListInfo);
       } 
    }
 }
@@ -34,17 +36,29 @@ function inventorySystem::parseSaveData(%this)
         }
         if (%curModule $= "inventorySystem")
         {
-            for (%clientIndex = 0; %clientIndex < ClientGroup.getCount(); %clientIndex++)
-            {
-                %client = ClientGroup.getObject(%clientIndex);
-                if (%client.nameBase $= $saveRecord.getKey(%i))
-                {
-                   %inventoryItemName = getWord($saveRecord.getValue(%i), 0);
-                   %inventoryAmount = getWord($saveRecord.getValue(%i), 1);
+            %curChar = $saveRecord.getKey(%i);
+            %inventoryItemName = getWord($saveRecord.getValue(%i), 0);
+            %inventoryAmount = getWord($saveRecord.getValue(%i), 1);
                    
-                   %client.player.setInventory(%inventoryItemName, %inventoryAmount);
-                }
-            }            
+            if(!isObject(%this.charRecord[%curChar,inventoryArray]))
+            {
+                %this.charRecord[%curChar,inventoryArray] = new ArrayObject();
+            }
+            %this.charRecord[%curChar,inventoryArray].add(%inventoryItemName, %inventoryAmount);
         }
+    }
+}
+
+
+function inventorySystem::getConnectionSave(%this, %client)
+{
+    if (!isObject(%this.charRecord[%client.connectData,inventoryArray])) return;
+    %client.player.clearInventory();
+    %count = %this.charRecord[%client.connectData,inventoryArray].count();
+    for (%i=0;%i<%count;%i++)
+    {
+        %inventoryItemName = %this.charRecord[%client.connectData,inventoryArray].getKey(%i);
+        %inventoryAmount = %this.charRecord[%client.connectData,inventoryArray].getValue(%i);
+        %client.player.setInventory(%inventoryItemName, %inventoryAmount);
     }
 }
