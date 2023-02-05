@@ -18,6 +18,10 @@ Inventory tracking mainly works via the Item class, utilizing the Item's ItemDat
 tracking. The object's inventory is categorized via ItemDatas acting as keys to arrays, allowing for very simple, consistent lookups. It also utilizes the callbacks
 like onCollision to react to ShapeBase objects hitting it. 
 
+### ItemData
+These are for your pickups, such as the weapons or weapon ammo. The scripted behavior for handling the pickup dictates if it provides increased ammo amounts, or if when used it mounts the provided ShapeBaseImage to be used as an active weapon.
+Additionally defines physical properties for when items are thrown or dropped, as well as secondary info like descriptions or preview images which can be used for GUI integration like inventory screens or HUD elements.
+
 ## RPC Samples:
 ### Sending a message from a client to the server
 Client side command:
@@ -44,30 +48,20 @@ Parameters are otherwise passed normally. Another example is the throw command, 
 
 ## callOnModule callbacks
 Uses the core callOnModules function to signal to any modules active that we have a particular event happening. It behaves akin to a regular signal-listen system.
-Here, we indicate to all active modules that the event Playgui_onWake() when the PlayGUI wakes up.
+
+Examples:
 
 ```
-function PlayGui::onWake(%this)
+function ShapeBase::setInventory(%this)
 {...
-   callOnModules("Playgui_onWake");
+    callonModules("onSetInventory","Game", %this, %itemData, %value); //%this is the object-instance holding the item
 }
 ```
 
-The notice system module then can respond to this via the matched callback function and do it's own behavior.
-In our example, it will push the MainChatHUD gui element to the Canvas stack so it will display, as well as prep the message vector.
 ```
-function noticeSystem::Playgui_onWake()
-{
-   // Message hud dialog
-   if ( isObject( MainChatHud ) )
-   {
-      Canvas.pushDialog( MainChatHud );
-      chatHud.attach(HudMessageVector);
-   }
-   ...
+function ShapeBase::clearInventory(%this)
+{...
+    callonModules("onClearInventory", %this);
 }
 ```
-
-Another event, "Playgui_onSleep" is called when the PlayGui goes to sleep, allowing the notice system to pop MainChatHud from the canvas stack.
-
 
