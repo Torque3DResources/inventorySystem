@@ -126,9 +126,7 @@ function ShapeBase::pickup(%this, %itemInst, %amount)
       %amount = %this.maxInventory(%itemData) - %this.getInventory(%itemData);
 
    // The datablock does the work...
-   if (%amount < 0)
-      %amount = 0;
-   if (%amount)
+   if (%amount>=0)
       return %itemData.onPickup(%itemInst, %this, %amount);
    return false;
 }
