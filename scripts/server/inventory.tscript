@@ -202,7 +202,7 @@ function ShapeBase::decInventory(%this, %itemData, %amount)
 
 function ShapeBase::getInventory(%this, %itemData)
 {
-   if(!isObject(%this.inventoryArray))
+   if(!isObject(%this.inventoryArray) || !%this.inventoryArray.isMemberOfClass("ArrayObject"))
    {
       %this.inventoryArray = new ArrayObject();
    }
@@ -222,7 +222,7 @@ function ShapeBase::getInventory(%this, %itemData)
 
 function ShapeBase::setInventory(%this, %itemData, %value)
 {
-   if(!isObject(%this.inventoryArray))
+   if(!isObject(%this.inventoryArray)|| !%this.inventoryArray.isMemberOfClass("ArrayObject"))
    {
       %this.inventoryArray = new ArrayObject();
    }
@@ -263,7 +263,7 @@ function ShapeBase::setInventory(%this, %itemData, %value)
 
 function ShapeBase::clearInventory(%this)
 {
-   if(!isObject(%this.inventoryArray))
+   if(!isObject(%this.inventoryArray)|| !%this.inventoryArray.isMemberOfClass("ArrayObject"))
    {
       %this.inventoryArray = new ArrayObject();
    }
