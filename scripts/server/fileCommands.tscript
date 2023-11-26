@@ -44,7 +44,8 @@ function inventorySystem::parseSaveData(%this)
             {
                 %this.charRecord[%curChar,inventoryArray] = new ArrayObject();
             }
-            %this.charRecord[%curChar,inventoryArray].add(%inventoryItemName, %inventoryAmount);
+            if (%inventoryItemName !$= "")
+                %this.charRecord[%curChar,inventoryArray].add(%inventoryItemName, %inventoryAmount);
         }
     }
 }
