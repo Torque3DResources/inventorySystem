@@ -34,12 +34,7 @@ function inventorySystem::initClient(%this)
 {
    //client scripts
    //Here, we exec out keybind scripts so the player is able to move when they get into a game
-   %this.queueExec("./scripts/client/default.keybinds.tscript");
-   
-   %prefPath = getPrefpath();
-   if(isFile(%prefPath @ "/keybinds.tscript"))
-      exec(%prefPath @ "/keybinds.tscript");
-      
+   %this.queueExec("./scripts/client/default.keybinds.tscript");      
    %this.queueExec("./scripts/client/inputCommands.tscript");
 }
 
