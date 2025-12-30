@@ -299,7 +299,9 @@ function ShapeBase::throwObject(%this, %itemInst)
 
    // Set the object's position and initial velocity
    %pos = getBoxCenter(%this.getWorldBox());
-   %itemInst.setTransform(%pos);
+   %rot = getwords(%this.getTransform(),3,6);
+   echo(%rot);
+   %itemInst.setTransform(%pos SPC %rot);
    %itemInst.applyImpulse(%pos, %vec);
 
    // Since the object is thrown from the center of the shape,
